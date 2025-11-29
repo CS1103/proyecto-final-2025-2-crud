@@ -29,8 +29,8 @@ Implementación de una red neuronal multicapa en C++ puro para clasificación y 
   * **Loli Gonzalez, Sebastian** – 202420022 (Responsable de Investigación Teórica y Documentación Académica)
   * **Aguirre Milla, Fernando** - 202420003 (Desarrollo de Arquitectura y Diseño de Patrones)
   * **Palomino Meza, Ricardo** - 202420152 (Implementación del Modelo y Estructuras Core)
-  * **Gala Vásquez, Danna Nickol** – 202410573 (Pruebas, Benchmarking y Validación)
-  * **Choque Coaquira, Rafael** – 202410378 (Documentación Técnica y Demo)
+  * **Gala Vásquez, Danna Nickol** – 202410573 (Análisis del Rendimiento 1)
+  * **Choque Coaquira, Rafael** – 202410378 (Análisis del Rendimiento 2)
 
 ---
 
@@ -461,13 +461,11 @@ El framework implementado en C++ materializa estos conceptos teóricos en estruc
 
 | Tarea                     | Miembro  | Rol                       |
 | ------------------------- | -------- | ------------------------- |
-| Investigación teórica     | Alumno A | Documentar bases teóricas |
-| Diseño de la arquitectura | Alumno B | UML y esquemas de clases  |
-| Implementación del modelo | Alumno C | Código C++ de la NN       |
-| Pruebas y benchmarking    | Alumno D | Generación de métricas    |
-| Documentación y demo      | Alumno E | Tutorial y video demo     |
-
-> *Actualizar con tareas y nombres reales.*
+| Investigación teórica     | Loli Gonzalez, Sebastian | Documentar bases teóricas |
+| Diseño de la arquitectura | Aguirre Milla, Fernando | UML y esquemas de clases  |
+| Implementación del modelo | Palomino Meza, Ricardo | Código C++ de la NN       |
+| Análisis del Rendimiento 1    | Gala Vásquez, Danna Nickol | Generación de métricas    |
+| Análisis del Rendimiento 2      | Choque Coaquira, Rafael | Comparación de optimizadores     |
 
 ---
 
