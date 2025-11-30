@@ -431,28 +431,21 @@ El framework implementado en C++ materializa estos conceptos teóricos en estruc
 │ + backward(): Tensor<T,2>   │
 │ + update_params()           │
 └─────────────────────────────┘
-         △
-         │ implements
-         ├──────────┬──────────┬────────────
-         │          │          │
-    ┌────▼───┐  ┌───▼───┐  ┌──▼─────┐
-    │ Dense  │  │ ReLU  │  │Sigmoid │
-    └────────┘  └───────┘  └────────┘
-
-┌─────────────────────────────┐
-│    ILoss<T, DIMS>           │
-│  <<interface>>              │
-├─────────────────────────────┤
-│ + loss(): T                 │
-│ + loss_gradient(): Tensor   │
-└─────────────────────────────┘
-         △
-         │ implements
-         ├────────────
-         │            │
-    ┌────▼─────┐  ┌──▼──────┐
-    │ MSELoss  │  │ BCELoss │
-    └──────────┘  └─────────┘
+         △                                  ┌─────────────────────────────┐
+         │ implements                        │    ILoss<T, DIMS>           │
+         ├──────────┬──────────┬──────────── │  <<interface>>              │  
+         │          │          │             ├─────────────────────────────┤
+    ┌────▼───┐  ┌───▼───┐  ┌──▼─────┐        │ + loss(): T                 │
+    │ Dense  │  │ ReLU  │  │Sigmoid │        │ + loss_gradient(): Tensor   │
+    └────────┘  └───────┘  └────────┘        └─────────────────────────────┘
+                                                         △
+                                                         │ implements
+                                                         ├─────────────┬
+                                                         │             │
+                                                    ┌────▼─────┐  ┌────▼────┐
+                                                    │ MSELoss  │  │ BCELoss │
+                                                    └──────────┘  └─────────┘
+ 
 
 ┌─────────────────────────────┐
 │    IOptimizer<T>            │
@@ -530,29 +523,258 @@ proyecto/
 
 * **Creación de una Red Neuronal Básica**:
 ```cpp
+#include "neural_network.h"
+using namespace utec::neural_network;
 
+// Crear red neuronal
+NeuralNetwork<double> model;
+
+// Agregar capas
+model.add_layer(std::make_unique<Dense<double>>(
+    2,      // 2 entradas
+    4,      // 4 neuronas ocultas
+    [](auto& w) { /* inicialización pesos */ },
+    [](auto& b) { b.fill(0.0); }
+));
+
+model.add_layer(std::make_unique<ReLU<double>>());
+model.add_layer(std::make_unique<Dense<double>>(4, 1, ...));
+model.add_layer(std::make_unique<Sigmoid<double>>());
 ```
 * **Entrenamiento**:
 ```cpp
+// Datos de entrenamiento (Tensor 2D: [batch_size, features])
+Tensor<double, 2> X(100, 2);  // 100 ejemplos, 2 features
+Tensor<double, 2> Y(100, 1);  // 100 etiquetas
 
+// Entrenar con MSE y SGD
+model.train<MSELoss, SGD>(
+    X,              // Datos de entrada
+    Y,              // Etiquetas
+    1000,           // Épocas
+    32,             // Tamaño del batch (no implementado aún)
+    0.01            // Learning rate
+);
 ```
 * **Predicción**:
 ```cpp
-
+Tensor<double, 2> X_test(10, 2);  // 10 ejemplos de prueba
+auto predictions = model.predict(X_test);
+std::cout << predictions << std::endl;
 ```
 
 * **Uso de Diferentes Optimizadores**:
 ```cpp
-
+// Adam optimizer
+model.train<BCELoss, Adam>(X, Y, 500, 32, 0.001);
 ```
 
 * **Casos de prueba**:
 
-  * Test unitario de capa densa.
-  * Test de función de activación ReLU.
-  * Test de convergencia en dataset de ejemplo.
+Test 1: Tensor Operations
 
-> *Personalizar rutas, comandos y casos reales.*
+```cpp
+TEST(TensorTest, BasicOperations) {
+    Tensor<double, 2> t1(2, 3);
+    t1.fill(1.0);
+    
+    Tensor<double, 2> t2(2, 3);
+    t2.fill(2.0);
+    
+    auto result = t1 + t2;
+    EXPECT_EQ(result(0,0), 3.0);
+}
+```
+Test 2: Dense Forward Pass
+
+```cpp
+TEST(DenseTest, ForwardPass) {
+    Dense<double> layer(2, 3,
+        [](auto& w) { w.fill(0.5); },
+        [](auto& b) { b.fill(0.1); }
+    );
+    
+    Tensor<double, 2> input(1, 2);
+    input = {1.0, 2.0};
+    
+    auto output = layer.forward(input);
+    // output debería ser (1*0.5 + 2*0.5 + 0.1) para cada neurona
+    EXPECT_NEAR(output(0,0), 1.6, 1e-6);
+}
+```
+
+Test 3: Backpropagation
+
+```cpp
+TEST(DenseTest, Backward) {
+    Dense<double> layer(2, 1, ...);
+    
+    Tensor<double, 2> input(1, 2);
+    input = {1.0, 2.0};
+    
+    auto output = layer.forward(input);
+    
+    Tensor<double, 2> grad_output(1, 1);
+    grad_output = {1.0};
+    
+    auto grad_input = layer.backward(grad_output);
+    EXPECT_EQ(grad_input.shape()[0], 1);
+    EXPECT_EQ(grad_input.shape()[1], 2);
+}
+```
+
+Test 4: Loss Functions
+
+```cpp
+TEST(LossTest, MSELoss) {
+    Tensor<double, 2> pred(2, 1);
+    pred = {0.8, 0.2};
+    
+    Tensor<double, 2> target(2, 1);
+    target = {1.0, 0.0};
+    
+    MSELoss<double> loss(pred, target);
+    double loss_value = loss.loss();
+    
+    // MSE = ((0.8-1)^2 + (0.2-0)^2) / 2 = 0.04/2 = 0.02
+    EXPECT_NEAR(loss_value, 0.04, 1e-6);
+}
+```
+
+Test 5: Activation Functions
+
+```cpp
+TEST(ActivationTest, ReLU) {
+    ReLU<double> relu;
+    
+    Tensor<double, 2> input(2, 2);
+    input = {{-1.0, 2.0}, {-3.0, 4.0}};
+    
+    auto output = relu.forward(input);
+    EXPECT_EQ(output(0,0), 0.0);
+    EXPECT_EQ(output(0,1), 2.0);
+    EXPECT_EQ(output(1,0), 0.0);
+    EXPECT_EQ(output(1,1), 4.0);
+}
+```
+#### 2.3  Ejemplos de uso con código
+
+
+Ejemplo 1: XOR Problem
+
+```cpp
+#include "neural_network.h"
+using namespace utec::neural_network;
+
+int main() {
+    // Datos XOR
+    Tensor<double, 2> X(4, 2);
+    X = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
+    
+    Tensor<double, 2> Y(4, 1);
+    Y = {0, 1, 1, 0};
+    
+    // Crear modelo
+    NeuralNetwork<double> model;
+    
+    // Arquitectura: 2 -> 4 -> 1
+    model.add_layer(std::make_unique<Dense<double>>(
+        2, 4,
+        [](auto& w) { 
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::normal_distribution<> dist(0.0, 0.5);
+            for(auto& val : w) val = dist(gen);
+        },
+        [](auto& b) { b.fill(0.0); }
+    ));
+    
+    model.add_layer(std::make_unique<ReLU<double>>());
+    
+    model.add_layer(std::make_unique<Dense<double>>(
+        4, 1,
+        [](auto& w) { /* inicialización */ },
+        [](auto& b) { b.fill(0.0); }
+    ));
+    
+    model.add_layer(std::make_unique<Sigmoid<double>>());
+    
+    // Entrenar
+    model.train<MSELoss, Adam>(X, Y, 5000, 4, 0.01);
+    
+    // Predecir
+    auto predictions = model.predict(X);
+    std::cout << "Predicciones:\n" << predictions;
+    
+    return 0;
+}
+```
+
+Ejemplo 2: Clasificación Binaria
+
+```cpp
+// Generar datos sintéticos
+Tensor<double, 2> X(100, 2);
+Tensor<double, 2> Y(100, 1);
+
+// Clase 0: puntos alrededor de (0, 0)
+// Clase 1: puntos alrededor de (1, 1)
+std::random_device rd;
+std::mt19937 gen(rd());
+std::normal_distribution<> dist(0.0, 0.2);
+
+for(size_t i = 0; i < 50; ++i) {
+    X(i, 0) = dist(gen);
+    X(i, 1) = dist(gen);
+    Y(i, 0) = 0.0;
+}
+
+for(size_t i = 50; i < 100; ++i) {
+    X(i, 0) = 1.0 + dist(gen);
+    X(i, 1) = 1.0 + dist(gen);
+    Y(i, 0) = 1.0;
+}
+
+// Crear y entrenar modelo
+NeuralNetwork<double> model;
+model.add_layer(std::make_unique<Dense<double>>(2, 8, ...));
+model.add_layer(std::make_unique<ReLU<double>>());
+model.add_layer(std::make_unique<Dense<double>>(8, 1, ...));
+model.add_layer(std::make_unique<Sigmoid<double>>());
+
+model.train<BCELoss, SGD>(X, Y, 1000, 32, 0.1);
+```
+
+Ejemplo 3: Regresión
+
+```cpp
+// Datos de regresión: y = 2x + 1 + ruido
+Tensor<double, 2> X(100, 1);
+Tensor<double, 2> Y(100, 1);
+
+std::random_device rd;
+std::mt19937 gen(rd());
+std::uniform_real_distribution<> x_dist(0.0, 10.0);
+std::normal_distribution<> noise(0.0, 0.5);
+
+for(size_t i = 0; i < 100; ++i) {
+    double x = x_dist(gen);
+    X(i, 0) = x;
+    Y(i, 0) = 2.0 * x + 1.0 + noise(gen);
+}
+
+// Modelo simple: 1 -> 1 (sin activación)
+NeuralNetwork<double> model;
+model.add_layer(std::make_unique<Dense<double>>(1, 1, ...));
+
+model.train<MSELoss, SGD>(X, Y, 1000, 32, 0.01);
+
+// Predecir para nuevos valores
+Tensor<double, 2> X_test(5, 1);
+X_test = {1.0, 2.0, 3.0, 4.0, 5.0};
+auto predictions = model.predict(X_test);
+```
+
 
 ---
 
