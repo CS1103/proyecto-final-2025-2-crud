@@ -402,22 +402,150 @@ El framework implementado en C++ materializa estos conceptos teóricos en estruc
 
 #### 2.1 Arquitectura de la solución
 
-* **Patrones de diseño**: ejemplo: Factory para capas, Strategy para optimizadores.
-* **Estructura de carpetas (ejemplo)**:
+* PATRONES DE DISEÑO UTILIZADOS :
+  
+  Strategy Pattern (Patrón Estrategia)
+  * ILayer, ILoss, IOptimizer
+  * Propósito: Permite intercambiar algoritmos (capas, funciones de pérdida, optimizadores) sin modificar el cliente
+  * Implementación: Interfaces abstractas con múltiples implementaciones concretas
+ 
+  Template Method Pattern
+  * Clase NeuralNetwork::train()
+  * Propósito: Define el esqueleto del algoritmo de entrenamiento, delegando pasos específicos a las implementaciones
+  
+  Composite Pattern (Implícito)
+  * std::vector<std::unique_ptr<ILayer<T>>>
+  * Propósito: Trata capas individuales y composiciones de capas de manera uniforme
+  
+  Factory Method (Implícito)
+  * Constructores de Dense con functores de inicialización
+  * Propósito: Permite crear objetos con diferentes estrategias de inicialización
+ 
+  Diagrama UML
+```
+┌─────────────────────────────┐
+│      ILayer<T>              │
+│  <<interface>>              │
+├─────────────────────────────┤
+│ + forward(): Tensor<T,2>    │
+│ + backward(): Tensor<T,2>   │
+│ + update_params()           │
+└─────────────────────────────┘
+         △
+         │ implements
+         ├──────────┬──────────┬────────────
+         │          │          │
+    ┌────▼───┐  ┌───▼───┐  ┌──▼─────┐
+    │ Dense  │  │ ReLU  │  │Sigmoid │
+    └────────┘  └───────┘  └────────┘
 
-  ```
-  proyecto-final/
-  ├── src/
-  │   ├── layers/
-  │   ├── optimizers/
-  │   └── main.cpp
-  ├── tests/
-  └── docs/
-  ```
+┌─────────────────────────────┐
+│    ILoss<T, DIMS>           │
+│  <<interface>>              │
+├─────────────────────────────┤
+│ + loss(): T                 │
+│ + loss_gradient(): Tensor   │
+└─────────────────────────────┘
+         △
+         │ implements
+         ├────────────
+         │            │
+    ┌────▼─────┐  ┌──▼──────┐
+    │ MSELoss  │  │ BCELoss │
+    └──────────┘  └─────────┘
+
+┌─────────────────────────────┐
+│    IOptimizer<T>            │
+│  <<interface>>              │
+├─────────────────────────────┤
+│ + update()                  │
+│ + step()                    │
+└─────────────────────────────┘
+         △
+         │ implements
+         ├───────────
+         │           │
+    ┌────▼───┐  ┌───▼────┐
+    │  SGD   │  │  Adam  │
+    └────────┘  └────────┘
+
+┌─────────────────────────────────┐
+│    NeuralNetwork<T>             │
+├─────────────────────────────────┤
+│ - layers: vector<ILayer<T>>     │
+├─────────────────────────────────┤
+│ + add_layer()                   │
+│ + train()                       │
+│ + predict()                     │
+└─────────────────────────────────┘
+         │ contains
+         ▼
+    ┌─────────┐
+    │ ILayer  │
+    └─────────┘
+
+┌─────────────────────────────┐
+│      Tensor<T, N>           │
+├─────────────────────────────┤
+│ - dimensions: array<N>      │
+│ - data: vector<T>           │
+├─────────────────────────────┤
+│ + operator+,-,*,/           │
+│ + reshape()                 │
+│ + fill()                    │
+│ + begin(), end()            │
+└─────────────────────────────┘
+```
+* **Estructura de carpetas **:
+
+```
+proyecto/
+│
+├── include/
+│   ├── tensor.h              # Clase Tensor base
+│   ├── nn_interfaces.h       # Interfaces abstractas
+│   ├── nn_dense.h           # Capa Dense (fully connected)
+│   ├── nn_activation.h      # Funciones de activación
+│   ├── nn_loss.h            # Funciones de pérdida
+│   ├── nn_optimizer.h       # Optimizadores
+│   └── neural_network.h     # Clase principal NeuralNetwork
+│
+├── src/
+│   └── main.cpp             # Ejemplos de uso
+│
+├── tests/
+│   ├── test_tensor.cpp      # Tests unitarios para Tensor
+│   ├── test_layers.cpp      # Tests para capas
+│   └── test_training.cpp    # Tests de entrenamiento
+│
+├── docs/
+│   ├── manual_uso.md        # Este documento
+│   └── uml_diagrams/        # Diagramas UML
+│
+├── CMakeLists.txt           # Configuración CMake
+└── README.md                # Descripción general
+```
 
 #### 2.2 Manual de uso y casos de prueba
 
-* **Cómo ejecutar**: `./build/neural_net_demo input.csv output.csv`
+* **Creación de una Red Neuronal Básica**:
+```cpp
+
+```
+* **Entrenamiento**:
+```cpp
+
+```
+* **Predicción**:
+```cpp
+
+```
+
+* **Uso de Diferentes Optimizadores**:
+```cpp
+
+```
+
 * **Casos de prueba**:
 
   * Test unitario de capa densa.
