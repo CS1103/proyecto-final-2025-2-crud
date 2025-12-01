@@ -877,10 +877,13 @@ Referencias a scripts y utilidades:
 
 ### 6. Conclusiones
 
-* **Logros**: Implementar NN desde cero, validar en dataset de ejemplo.
-* **Evaluación**: Calidad y rendimiento adecuados para propósito académico.
-* **Aprendizajes**: Profundización en backpropagation y optimización.
-* **Recomendaciones**: Escalar a datasets más grandes y optimizar memoria.
+El proyecto logró implementar desde cero un framework funcional de redes neuronales en C++ puro, basado en una arquitectura modular de tensores multidimensionales y patrones de diseño (Strategy, Template Method y Composite implícito) que permiten intercambiar capas, funciones de pérdida y optimizadores sin modificar el núcleo de la red. La combinación de las interfaces ILayer, ILoss e IOptimizer con la clase genérica NeuralNetwork<T> y el tipo Tensor<T,N> demuestra que es posible reproducir, a pequeña escala, la flexibilidad de librerías modernas de deep learning dentro de un entorno estrictamente académico.
+
+Los experimentos de rendimiento evidencian que el optimizador Adam con tasa de aprendizaje 0.001 y batch pequeño (bs=4) ofrece el mejor compromiso entre velocidad de convergencia y desempeño final: alcanza exactitud de validación igual a 1.0 en apenas tres épocas y reduce la pérdida de validación a valores cercanos a 0.09, superando de forma consistente a las configuraciones basadas en SGD. Por su parte, SGD con batch grande (bs=32) presenta la convergencia más lenta y se queda en torno a 0.74 de exactitud y 0.60 de pérdida luego de diez épocas, lo que confirma empíricamente la ventaja de los métodos adaptativos y de los mini-batches pequeños en problemas de este tamaño. El análisis de tiempos muestra que Adam introduce un sobrecosto aproximado de 20–25 % respecto a SGD, pero este incremento es razonable frente a la mejora en métricas de validación, por lo que se justifica su elección como optimizador preferente en este framework.
+
+Desde el punto de vista computacional, el sistema cumple su propósito pedagógico: permite instrumentar métricas, repetir corridas con diferentes semillas y generar gráficos de convergencia y comparaciones de optimizadores. No obstante, también se identificaron limitaciones claras: el entrenamiento aún no explota batching real, las operaciones matriciales se realizan con bucles secuenciales en CPU y no se emplean bibliotecas de álgebra lineal optimizadas ni aceleración por GPU. Estas observaciones abren líneas de trabajo futuras concretas, como integrar Eigen u OpenBLAS, paralelizar las operaciones críticas y extender la infraestructura hacia entrenamiento en GPU.
+
+En conjunto, el proyecto no solo valida experimentalmente los conceptos teóricos estudiados (backpropagation, funciones de activación, pérdidas y optimizadores avanzados), sino que además deja una base de código extensible sobre la cual se pueden construir arquitecturas más complejas y experimentos de mayor escala. El aprendizaje principal para el equipo es doble: por un lado, comprender en detalle qué ocurre “debajo” de frameworks como PyTorch o TensorFlow, y por otro, experimentar de primera mano cómo decisiones aparentemente de bajo nivel (tipo de optimizador, tamaño de batch, implementación de tensores) impactan directamente en la calidad del modelo y en el tiempo de cómputo.
 
 ---
 
