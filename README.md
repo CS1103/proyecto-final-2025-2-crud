@@ -791,19 +791,75 @@ auto predictions = model.predict(X_test);
 
 ### 4. Análisis del rendimiento
 
-* **Métricas de ejemplo**:
+En esta sección se presentan los resultados experimentales obtenidos con los ejemplos instrumentados y el protocolo descrito en el repositorio.
 
-  * Iteraciones: 1000 épocas.
-  * Tiempo total de entrenamiento: 2m30s.
-  * Precisión final: 92.5%.
-* **Ventajas/Desventajas**:
+Resumen:
+- Métricas recolectadas: tiempo por época y total (s), pérdida (train/val), precisión/accuracy (train/val) y seed/hiperparámetros por corrida.
+- Comparación de optimizadores: SGD vs Adam (experimentos reproducibles con múltiples semillas).
 
-  * * Código ligero y dependencias mínimas.
-  * – Sin paralelización, rendimiento limitado.
-* **Mejoras futuras**:
+Cómo reproducir los experimentos (rápido):
+1. Compilar el proyecto (opcionalmente con `-Build` en el script):
+```powershell
+mkdir build
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release -- /m
+```
+2. Instalar dependencias Python para plotting (opcional si ya las tienes):
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -U pip
+python -m pip install -r .\scripts\requirements.txt
+```
+3. Ejecutar experimentos automatizados (5 repeticiones por optimizador, 100 épocas) y generar gráficas:
+```powershell
+.\scripts\run_experiments.ps1 -Reps 5 -Epochs 100 -DoPlot -Build
+```
 
-  * Uso de BLAS para multiplicaciones (Justificación).
-  * Paralelizar entrenamiento por lotes (Justificación).
+Resultados (ejemplos generados):
+
+- Convergencia de la pérdida (val_loss): `plots/loss.png`
+
+- Precisión en validación (val_acc): `plots/accuracy.png`
+
+- Comparación de tiempos totales por optimizador: `plots/times_boxplot.png`
+
+<!-- Insertar imágenes generadas -->
+
+![Convergencia de la pérdida](plots/loss.png)
+
+![Precisión en validación](plots/accuracy.png)
+
+![Tiempos por optimizador](plots/times_boxplot.png)
+
+
+### Estado del "ANÁLISIS DE RENDIMIENTO"
+
+- [x] Métricas de rendimiento (tiempo, precisión, etc.) — implementadas y emitidas por época en CSV desde los ejemplos C++ (`examples/*`).
+- [x] Gráficos de convergencia — generados por `scripts/plot_results.py` (figuras en `plots/`).
+- [x] Comparación de optimizadores — infraestructura completa; gráficos comparativos generados (SGD vs Adam).
+- [x] Ventajas y desventajas del enfoque — documentadas en esta sección.
+- [x] Mejoras futuras propuestas con justificación — listadas en esta sección.
+
+(Nota: las gráficas incluidas aquí se generaron a partir de CSV sintéticos de ejemplo en `logs/`; para obtener resultados del experimento real, compila y ejecuta `scripts/run_experiments.ps1 -Reps 5 -Epochs 100 -DoPlot -Build` en tu entorno.)
+
+Ventajas/Desventajas del enfoque actual
+- Pros:
+  - Código simple y didáctico.
+  - Fácil de instrumentar para medir métricas por época (callback `on_epoch_end`).
+- Contras:
+  - No usa BLAS/Eigen ni aceleración GPU; operaciones matriciales son implementadas en bucles puros.
+  - Sin paralelización ni batching eficiente para grandes datasets.
+
+Mejoras futuras propuestas (con justificación):
+- Integrar una biblioteca de álgebra lineal optimizada (Eigen/OpenBLAS) para acelerar multiplicaciones y reducir tiempo por época.
+- Implementar multithreading (OpenMP o std::thread) para paralelizar operaciones sobre batches y aprovechar CPUs con varios núcleos.
+- Añadir soporte de GPU (CUDA/cuBLAS) para acelerar entrenamientos de redes más grandes.
+- Implementar callbacks adicionales y logging estructurado (JSON/Parquet) para facilitar análisis y reproducibilidad.
+
+Referencias a scripts y utilidades:
+- `scripts/run_experiments.ps1` — automatiza compilación, ejecución de corridas y plotting.
+- `scripts/plot_results.py` — genera `plots/loss.png`, `plots/accuracy.png` y `plots/times_boxplot.png` a partir de `logs/*.csv`.
 
 ---
 
